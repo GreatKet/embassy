@@ -228,6 +228,7 @@ impl<'a> Transfer<'a> {
         let this = Self { channel };
 
         ch.cr().write(|w| w.set_reset(true));
+        while ch.cr().read().en() {}
         ch.fcr().write(|w| w.0 = 0xFFFF_FFFF); // clear all irqs
         ch.llr().write(|_| {}); // no linked list
         ch.tr1().write(|w| {
@@ -279,6 +280,7 @@ impl<'a> Transfer<'a> {
         let ch = info.dma.ch(info.num);
 
         ch.cr().modify(|w| w.set_susp(true))
+        // ch.cr().write(|w| w.set_susp(true))
     }
 
     /// Return whether this transfer is still running.
@@ -290,7 +292,7 @@ impl<'a> Transfer<'a> {
         let ch = info.dma.ch(info.num);
 
         let sr = ch.sr().read();
-        !sr.tcf() && !sr.suspf()
+        !sr.tcf() && !sr.suspf() && !sr.idlef()
     }
 
     /// Gets the total remaining transfers for the channel

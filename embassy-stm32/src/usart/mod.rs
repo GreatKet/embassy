@@ -739,7 +739,15 @@ impl<'d> UartRx<'d, Async> {
         if !self.detect_previous_overrun {
             let sr = sr(r).read();
             // This read also clears the error and idle interrupt flags on v1.
-            unsafe { rdr(r).read_volatile() };
+            #[cfg(not(usart_v4))]
+            unsafe {
+                rdr(r).read_volatile()
+            };
+
+            #[cfg(usart_v4)]
+            if sr.ore() {
+                unsafe { rdr(r).read_volatile() };
+            }
             clear_interrupt_flags(r, sr);
         }
 
@@ -773,8 +781,15 @@ impl<'d> UartRx<'d, Async> {
 
             let sr = sr(r).read();
             // This read also clears the error and idle interrupt flags on v1.
-            unsafe { rdr(r).read_volatile() };
-            clear_interrupt_flags(r, sr);
+            #[cfg(not(usart_v4))]
+            unsafe {
+                rdr(r).read_volatile()
+            };
+
+            #[cfg(usart_v4)]
+            if sr.ore() {
+                unsafe { rdr(r).read_volatile() };
+            }
 
             if sr.pe() {
                 return Err(Error::Parity);
@@ -797,7 +812,10 @@ impl<'d> UartRx<'d, Async> {
             let sr = sr(r).read();
             // This read also clears the error and idle interrupt flags on v1.
             unsafe { rdr(r).read_volatile() };
-            clear_interrupt_flags(r, sr);
+            #[cfg(not(usart_v4))]
+            unsafe {
+                rdr(r).read_volatile()
+            };
 
             // enable idle interrupt
             r.cr1().modify(|w| {
@@ -815,7 +833,10 @@ impl<'d> UartRx<'d, Async> {
             let sr = sr(r).read();
 
             // This read also clears the error and idle interrupt flags on v1.
-            unsafe { rdr(r).read_volatile() };
+            #[cfg(not(usart_v4))]
+            unsafe {
+                rdr(r).read_volatile()
+            };
             clear_interrupt_flags(r, sr);
 
             if enable_idle_line_detection {
@@ -862,9 +883,11 @@ impl<'d> UartRx<'d, Async> {
             Either::Left(((), _)) => Ok(ReadCompletionEvent::DmaCompleted),
 
             // Idle line detected first
-            Either::Right((Ok(()), transfer)) => Ok(ReadCompletionEvent::Idle(
-                buffer_len - transfer.get_remaining_transfers() as usize,
-            )),
+            Either::Right((Ok(()), mut transfer)) => Ok(ReadCompletionEvent::Idle({
+                transfer.request_stop();
+                while transfer.is_running() {}
+                buffer_len - transfer.get_remaining_transfers() as usize
+            })),
 
             // error occurred
             Either::Right((Err(e), _)) => Err(e),
