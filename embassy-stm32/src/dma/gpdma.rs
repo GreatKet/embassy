@@ -279,8 +279,8 @@ impl<'a> Transfer<'a> {
         let info = self.channel.info();
         let ch = info.dma.ch(info.num);
 
-        ch.cr().modify(|w| w.set_susp(true))
-        // ch.cr().write(|w| w.set_susp(true))
+        // ch.cr().modify(|w| w.set_susp(true))
+        ch.cr().write(|w| w.set_susp(true))
     }
 
     /// Return whether this transfer is still running.
@@ -292,7 +292,8 @@ impl<'a> Transfer<'a> {
         let ch = info.dma.ch(info.num);
 
         let sr = ch.sr().read();
-        !sr.tcf() && !sr.suspf() && !sr.idlef()
+        // !sr.tcf() && !sr.suspf() &&
+        !sr.idlef()
     }
 
     /// Gets the total remaining transfers for the channel
