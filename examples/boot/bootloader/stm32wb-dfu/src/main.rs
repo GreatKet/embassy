@@ -86,12 +86,6 @@ fn main() -> ! {
         // composite devices they also need to be added on the function level (as shown later).
         //
         builder.msos_descriptor(msos::windows_version::WIN8_1, 2);
-
-        // In the case of non-composite devices, it seems that feature headers need to be on the device level.
-        // (As is implemented here)
-        //
-        // For composite devices however, they should be on the function level instead.
-        // (This is achieved by passing a GUID to the "usb_dfu" function)
         builder.msos_feature(msos::CompatibleIdFeatureDescriptor::new("WINUSB", ""));
         builder.msos_feature(msos::RegistryPropertyFeatureDescriptor::new(
             "DeviceInterfaceGUIDs",
