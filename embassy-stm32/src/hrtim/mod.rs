@@ -223,10 +223,12 @@ impl<'d, T: Instance> AdvancedPwm<'d, T> {
 pub struct BridgeConverter<T: Instance, C: AdvancedChannel<T>> {
     timer: PhantomData<T>,
     channel: PhantomData<C>,
+    frequency: Hertz,
     dead_time: u16,
     primary_duty: u16,
     min_secondary_duty: u16,
     max_secondary_duty: u16,
+    current_secondary_duty: u16,
 }
 
 impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
@@ -266,10 +268,12 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
         Self {
             timer: PhantomData,
             channel: PhantomData,
+            frequency: frequency,
             dead_time: 0,
             primary_duty: 0,
             min_secondary_duty: 0,
             max_secondary_duty: 0,
+            current_secondary_duty: 0,
         }
     }
 
@@ -281,6 +285,11 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
     /// Stop HRTIM.
     pub fn stop(&mut self) {
         T::regs().mcr().modify(|w| w.set_tcen(C::raw(), false));
+    }
+
+    /// Set new frequency
+    pub fn set_frequency(&mut self, frequency: Hertz) {
+        T::set_channel_frequency(C::raw(), frequency);
     }
 
     /// Enable burst mode.
@@ -333,6 +342,7 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
     /// In the case of a boost converter, this is the low-side switch
     pub fn set_primary_duty(&mut self, primary_duty: u16) {
         self.primary_duty = primary_duty;
+        info!("Primary duty is: {}", primary_duty);
         self.update_primary_duty_or_dead_time();
     }
 
@@ -341,6 +351,7 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
     /// If less than or equal to the primary duty, the secondary switch will be active for one tick
     /// If a fully complementary output is desired, the secondary duty can be set to the max compare
     pub fn set_secondary_duty(&mut self, secondary_duty: u16) {
+        self.max_secondary_duty = self.get_max_compare_value() - self.dead_time;
         let secondary_duty = if secondary_duty > self.max_secondary_duty {
             self.max_secondary_duty
         } else if secondary_duty <= self.min_secondary_duty {
@@ -348,8 +359,23 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
         } else {
             secondary_duty
         };
-
         T::regs().tim(C::raw()).cmp(2).modify(|w| w.set_cmp(secondary_duty));
+        self.current_secondary_duty = secondary_duty;
+    }
+
+    /// Get primary duty
+    pub fn get_primary_duty(&self) -> u16 {
+        self.primary_duty
+    }
+
+    /// Get secondary duty
+    pub fn get_secondary_duty(&self) -> u16 {
+        self.current_secondary_duty
+    }
+
+    /// Get dead-time
+    pub fn get_dead_time(&self) -> u16 {
+        self.dead_time
     }
 }
 
