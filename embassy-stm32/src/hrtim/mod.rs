@@ -229,6 +229,7 @@ pub struct BridgeConverter<T: Instance, C: AdvancedChannel<T>> {
     primary_duty: u16,
     min_secondary_duty: u16,
     max_secondary_duty: u16,
+    current_secondary_duty: u16,
 }
 
 impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
@@ -274,6 +275,7 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
             primary_duty: 0,
             min_secondary_duty: 0,
             max_secondary_duty: 0,
+            current_secondary_duty: 0,
         }
     }
 
@@ -346,6 +348,7 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
     /// In the case of a boost converter, this is the low-side switch
     pub fn set_primary_duty(&mut self, primary_duty: u16) {
         self.primary_duty = primary_duty;
+        info!("Primary duty is: {}", primary_duty);
         self.update_primary_duty_or_dead_time();
     }
 
@@ -363,6 +366,12 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
             secondary_duty
         };
         T::regs().tim(C::raw()).cmp(2).modify(|w| w.set_cmp(secondary_duty));
+        self.current_secondary_duty = secondary_duty;
+    }
+
+    /// Get secondary duty
+    pub fn get_secondary_duty(&self) -> u16 {
+        self.current_secondary_duty
     }
 
     /// Get frequency
