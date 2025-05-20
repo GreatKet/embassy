@@ -6,11 +6,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 embassy-sync = { version = "0.7.0", path = "../../../../embassy-sync" }
-<<<<<<< HEAD
 embassy-executor = { version = "0.8.0", path = "../../../../embassy-executor", features = ["arch-cortex-m", "executor-thread", "arch-cortex-m", "executor-thread"] }
-=======
-embassy-executor = { version = "0.7.0", path = "../../../../embassy-executor", features = ["arch-cortex-m", "executor-thread", "arch-cortex-m", "executor-thread"] }
->>>>>>> fa6b405a6 (embassy-sync: bump to 0.7.0)
 embassy-time = { version = "0.4.0", path = "../../../../embassy-time", features = [] }
 embassy-nrf = { version = "0.6.0", path = "../../../../embassy-nrf", features = ["time-driver-rtc1", "gpiote", ] }
 embassy-boot = { version = "0.6.0", path = "../../../../embassy-boot", features = [] }
