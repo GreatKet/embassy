@@ -16,7 +16,11 @@ log = [
 
 [dependencies]
 embassy-sync = { version = "0.7.0", path = "../../embassy-sync" }
+<<<<<<< HEAD
 embassy-executor = { version = "0.8.0", path = "../../embassy-executor", features = ["arch-cortex-m", "executor-thread", "rtos-trace"] }
+=======
+embassy-executor = { version = "0.7.0", path = "../../embassy-executor", features = ["arch-cortex-m", "executor-thread", "rtos-trace"] }
+>>>>>>> fa6b405a6 (embassy-sync: bump to 0.7.0)
 embassy-time = { version = "0.4.0", path = "../../embassy-time" }
 embassy-nrf = { version = "0.6.0", path = "../../embassy-nrf", features = ["nrf52840", "time-driver-rtc1", "gpiote", "unstable-pac"] }
 

@@ -28,7 +28,11 @@ defmt = { version = "1.0.1", optional = true }
 digest = "0.10"
 log = { version = "0.4", optional = true }
 ed25519-dalek = { version = "2", default-features = false, features = ["digest"], optional = true }
+<<<<<<< HEAD
 embassy-embedded-hal = { version = "0.4.0", path = "../embassy-embedded-hal" }
+=======
+embassy-embedded-hal = { version = "0.3.0", path = "../embassy-embedded-hal" }
+>>>>>>> fa6b405a6 (embassy-sync: bump to 0.7.0)
 embassy-sync = { version = "0.7.0", path = "../embassy-sync" }
 embedded-storage = "0.3.1"
 embedded-storage-async = { version = "0.4.1" }
