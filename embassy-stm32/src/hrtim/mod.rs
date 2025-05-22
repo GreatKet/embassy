@@ -290,6 +290,7 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
     /// Set new frequency
     pub fn set_frequency(&mut self, frequency: Hertz) {
         T::set_channel_frequency(C::raw(), frequency);
+        self.frequency = frequency;
     }
 
     /// Enable burst mode.
@@ -361,6 +362,11 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
         };
         T::regs().tim(C::raw()).cmp(2).modify(|w| w.set_cmp(secondary_duty));
         self.current_secondary_duty = secondary_duty;
+    }
+
+    /// Get frequency
+    pub fn get_frequency(&self) -> u32 {
+        self.frequency.0
     }
 
     /// Get primary duty
