@@ -208,6 +208,8 @@ pub struct Config {
     pub pll1: Option<Pll>,
     pub pll2: Option<Pll>,
     #[cfg(any(rcc_h5, stm32h7, stm32h7rs))]
+    pub fraction: u16,
+    pub fractional: bool,
     pub pll3: Option<Pll>,
 
     #[cfg(any(stm32h7, stm32h7rs))]
@@ -244,6 +246,8 @@ impl Config {
             pll1: None,
             pll2: None,
             #[cfg(any(rcc_h5, stm32h7, stm32h7rs))]
+            fraction: 0,
+            fractional: false,
             pll3: None,
 
             #[cfg(any(stm32h7, stm32h7rs))]
@@ -491,10 +495,10 @@ pub(crate) unsafe fn init(config: Config) {
 
     // Configure PLLs.
     let pll_input = PllInput { csi, hse, hsi };
-    let pll1 = init_pll(0, config.pll1, &pll_input);
-    let pll2 = init_pll(1, config.pll2, &pll_input);
+    let pll1 = init_pll(0, config.pll1, &pll_input, config.fractional, config.fraction);
+    let pll2 = init_pll(1, config.pll2, &pll_input, false, 0);
     #[cfg(any(rcc_h5, stm32h7, stm32h7rs))]
-    let pll3 = init_pll(2, config.pll3, &pll_input);
+    let pll3 = init_pll(2, config.pll3, &pll_input, false, 0);
 
     // Configure sysclk
     let sys = match config.sys {
@@ -555,6 +559,7 @@ pub(crate) unsafe fn init(config: Config) {
         assert!(d1cpre_clk <= d1cpre_clk_max);
         sys / config.ahb_pre
     };
+    info!("Max clock: {}, clock: {}", hclk_max.0, hclk.0);
     #[cfg(stm32h5)]
     let hclk = sys / config.ahb_pre;
     assert!(hclk <= hclk_max);
@@ -774,7 +779,7 @@ struct PllOutput {
     t: Option<Hertz>,
 }
 
-fn init_pll(num: usize, config: Option<Pll>, input: &PllInput) -> PllOutput {
+fn init_pll(num: usize, config: Option<Pll>, input: &PllInput, fractional: bool, fraction: u16) -> PllOutput {
     let Some(config) = config else {
         // Stop PLL
         RCC.cr().modify(|w| w.set_pllon(num, false));
