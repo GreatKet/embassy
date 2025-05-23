@@ -544,7 +544,6 @@ pub(crate) unsafe fn init(config: Config) {
         assert!(d1cpre_clk <= d1cpre_clk_max);
         sys / config.ahb_pre
     };
-    info!("Max clock: {}, clock: {}", hclk_max.0, hclk.0);
     #[cfg(stm32h5)]
     let hclk = sys / config.ahb_pre;
     assert!(hclk <= hclk_max);
@@ -865,6 +864,8 @@ fn init_pll(num: usize, config: Option<Pll>, input: &PllInput, fractional: bool,
 
     RCC.cr().modify(|w| w.set_pllon(num, true));
     while !RCC.cr().read().pllrdy(num) {}
+    info!("Fractional: {}", RCC.pllcfgr().read().pllfracen(num));
+    info!("Fraction register: {}", RCC.pllfracr(num).read().fracn());
     PllOutput { p, q, r }
 }
 
