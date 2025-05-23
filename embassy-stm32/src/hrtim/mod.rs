@@ -348,7 +348,6 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
     /// In the case of a boost converter, this is the low-side switch
     pub fn set_primary_duty(&mut self, primary_duty: u16) {
         self.primary_duty = primary_duty;
-        info!("Primary duty is: {}", primary_duty);
         self.update_primary_duty_or_dead_time();
     }
 

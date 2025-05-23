@@ -559,7 +559,6 @@ pub(crate) unsafe fn init(config: Config) {
         assert!(d1cpre_clk <= d1cpre_clk_max);
         sys / config.ahb_pre
     };
-    info!("Max clock: {}, clock: {}", hclk_max.0, hclk.0);
     #[cfg(stm32h5)]
     let hclk = sys / config.ahb_pre;
     assert!(hclk <= hclk_max);
