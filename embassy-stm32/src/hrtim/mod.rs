@@ -229,7 +229,6 @@ pub struct BridgeConverter<T: Instance, C: AdvancedChannel<T>> {
     primary_duty: u16,
     min_secondary_duty: u16,
     max_secondary_duty: u16,
-    current_secondary_duty: u16,
 }
 
 impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
@@ -275,7 +274,6 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
             primary_duty: 0,
             min_secondary_duty: 0,
             max_secondary_duty: 0,
-            current_secondary_duty: 0,
         }
     }
 
@@ -365,7 +363,6 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
             secondary_duty
         };
         T::regs().tim(C::raw()).cmp(2).modify(|w| w.set_cmp(secondary_duty));
-        self.current_secondary_duty = secondary_duty;
     }
 
     /// Get secondary duty
