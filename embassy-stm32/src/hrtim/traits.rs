@@ -85,7 +85,8 @@ pub(crate) trait SealedInstance: RccPeripheral {
         //#[cfg(stm32f334)]
         //let timer_f = unsafe { crate::rcc::get_freqs() }.hrtim.unwrap_or(Self::frequency()).0;
         //#[cfg(not(stm32f334))]
-        let timer_f = Self::frequency().0;
+        let timer_f = Self::frequency().0 * 2;
+        // let timer_f = 474600000;
 
         let psc_min = (timer_f / f) / (u16::MAX as u32 / 32);
         let psc = if Self::regs().isr().read().dllrdy() {
@@ -98,20 +99,21 @@ pub(crate) trait SealedInstance: RccPeripheral {
         let per: u16 = (timer_f / f) as u16;
 
         let regs = Self::regs();
-
+        let x: u8 = psc.into();
+        info!("In master psc: {}", x);
         regs.mcr().modify(|w| w.set_ckpsc(psc.into()));
         regs.mper().modify(|w| w.set_mper(per));
     }
 
     fn set_channel_frequency(channel: usize, frequency: Hertz) {
         let f = frequency.0;
-        info!("f = {}", f);
 
         // TODO: wire up HRTIM to the RCC mux infra.
         //#[cfg(stm32f334)]
         //let timer_f = unsafe { crate::rcc::get_freqs() }.hrtim.unwrap_or(Self::frequency()).0;
         //#[cfg(not(stm32f334))]
         let timer_f = Self::frequency().0 * 2;
+        // let timer_f = 474600000;
         info!("Timer f = {}", timer_f);
         let psc_min = (timer_f / f) / (u16::MAX as u32 / 32);
         let psc = if Self::regs().isr().read().dllrdy() {
