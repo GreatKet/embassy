@@ -69,6 +69,12 @@ pub struct Pll {
     /// PLL multiplication factor.
     pub mul: PllMul,
 
+    /// Enable fraction PLL
+    pub fractional: bool,
+
+    /// PLL fraction
+    pub fraction_val: u16,
+
     /// PLL P division factor. If None, PLL P output is disabled.
     /// On PLL1, it must be even for most series (in particular,
     /// it cannot be 1 in series other than stm32h7, stm32h7rs23/733,
@@ -193,8 +199,6 @@ pub struct Config {
     pub pll1: Option<Pll>,
     pub pll2: Option<Pll>,
     #[cfg(any(rcc_h5, stm32h7, stm32h7rs))]
-    pub fraction: u16,
-    pub fractional: bool,
     pub pll3: Option<Pll>,
 
     #[cfg(any(stm32h7, stm32h7rs))]
@@ -231,8 +235,6 @@ impl Default for Config {
             pll1: None,
             pll2: None,
             #[cfg(any(rcc_h5, stm32h7, stm32h7rs))]
-            fraction: 0,
-            fractional: false,
             pll3: None,
 
             #[cfg(any(stm32h7, stm32h7rs))]
@@ -474,10 +476,10 @@ pub(crate) unsafe fn init(config: Config) {
 
     // Configure PLLs.
     let pll_input = PllInput { csi, hse, hsi };
-    let pll1 = init_pll(0, config.pll1, &pll_input, config.fractional, config.fraction);
-    let pll2 = init_pll(1, config.pll2, &pll_input, false, 0);
+    let pll1 = init_pll(0, config.pll1, &pll_input);
+    let pll2 = init_pll(1, config.pll2, &pll_input);
     #[cfg(any(rcc_h5, stm32h7, stm32h7rs))]
-    let pll3 = init_pll(2, config.pll3, &pll_input, false, 0);
+    let pll3 = init_pll(2, config.pll3, &pll_input);
 
     // Configure sysclk
     let sys = match config.sys {
@@ -488,7 +490,7 @@ pub(crate) unsafe fn init(config: Config) {
         _ => unreachable!(),
     };
 
-    trace!("SYS clock: {}", sys);
+    info!("SYS clock: {}", sys);
 
     // Check limits.
     #[cfg(stm32h5)]
@@ -751,7 +753,7 @@ struct PllOutput {
     r: Option<Hertz>,
 }
 
-fn init_pll(num: usize, config: Option<Pll>, input: &PllInput, fractional: bool, fraction: u16) -> PllOutput {
+fn init_pll(num: usize, config: Option<Pll>, input: &PllInput) -> PllOutput {
     let Some(config) = config else {
         // Stop PLL
         RCC.cr().modify(|w| w.set_pllon(num, false));
@@ -769,7 +771,7 @@ fn init_pll(num: usize, config: Option<Pll>, input: &PllInput, fractional: bool,
             r: None,
         };
     };
-
+    assert!(config.fraction_val < 8192);
     let in_clk = match config.source {
         PllSource::DISABLE => panic!("must not set PllSource::Disable"),
         PllSource::HSI => unwrap!(input.hsi),
@@ -792,6 +794,14 @@ fn init_pll(num: usize, config: Option<Pll>, input: &PllInput, fractional: bool,
     let wide_allowed = ref_range != Pllrge::RANGE1;
 
     let vco_clk = ref_clk * config.mul;
+
+    let additional_clk = if config.fractional {
+        ((ref_clk.0 / 1000) * (config.fraction_val as u32) / 8192) * 1000
+    } else {
+        0
+    };
+
+    let vco_clk = Hertz(vco_clk.0 + additional_clk);
     let vco_range = if VCO_RANGE.contains(&vco_clk) {
         Pllvcosel::MEDIUM_VCO
     } else if wide_allowed && VCO_WIDE_RANGE.contains(&vco_clk) {
@@ -814,7 +824,6 @@ fn init_pll(num: usize, config: Option<Pll>, input: &PllInput, fractional: bool,
     });
     let q = config.divq.map(|div| vco_clk / div);
     let r = config.divr.map(|div| vco_clk / div);
-
     #[cfg(stm32h5)]
     RCC.pllcfgr(num).write(|w| {
         w.set_pllsrc(config.source);
@@ -829,9 +838,9 @@ fn init_pll(num: usize, config: Option<Pll>, input: &PllInput, fractional: bool,
 
     #[cfg(any(stm32h7, stm32h7rs))]
     {
-        if fractional {
+        if config.fractional {
             RCC.pllfracr(num).modify(|w| {
-                w.set_fracn(fraction);
+                w.set_fracn(config.fraction_val);
             });
         }
         RCC.pllckselr().modify(|w| {
@@ -842,7 +851,7 @@ fn init_pll(num: usize, config: Option<Pll>, input: &PllInput, fractional: bool,
         RCC.pllcfgr().modify(|w| {
             w.set_pllvcosel(num, vco_range);
             w.set_pllrge(num, ref_range);
-            w.set_pllfracen(num, fractional);
+            w.set_pllfracen(num, config.fractional);
             w.set_divpen(num, p.is_some());
             w.set_divqen(num, q.is_some());
             w.set_divren(num, r.is_some());
@@ -858,8 +867,6 @@ fn init_pll(num: usize, config: Option<Pll>, input: &PllInput, fractional: bool,
 
     RCC.cr().modify(|w| w.set_pllon(num, true));
     while !RCC.cr().read().pllrdy(num) {}
-    info!("Fractional: {}", RCC.pllcfgr().read().pllfracen(num));
-    info!("Fraction register: {}", RCC.pllfracr(num).read().fracn());
     PllOutput { p, q, r }
 }
 
