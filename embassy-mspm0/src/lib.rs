@@ -39,14 +39,6 @@ pub mod mode {
 #[cfg(feature = "_time-driver")]
 mod time_driver;
 
-// Interrupt group handlers.
-#[cfg_attr(mspm0c110x, path = "int_group/c110x.rs")]
-#[cfg_attr(mspm0g350x, path = "int_group/g350x.rs")]
-#[cfg_attr(mspm0g351x, path = "int_group/g351x.rs")]
-#[cfg_attr(mspm0l130x, path = "int_group/l130x.rs")]
-#[cfg_attr(mspm0l222x, path = "int_group/l222x.rs")]
-mod int_group;
-
 pub(crate) mod _generated {
     #![allow(dead_code)]
     #![allow(unused_imports)]
