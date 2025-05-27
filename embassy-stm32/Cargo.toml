@@ -19,23 +19,49 @@ flavors = [
     { regex_feature = "stm32f1.*", target = "thumbv7m-none-eabi" },
     { regex_feature = "stm32f2.*", target = "thumbv7m-none-eabi" },
     { regex_feature = "stm32f3.*", target = "thumbv7em-none-eabi" },
-    { regex_feature = "stm32f4[2367]..[ig]", target = "thumbv7em-none-eabi", features = ["low-power", "dual-bank"] },
-    { regex_feature = "stm32f4.*", target = "thumbv7em-none-eabi", features = ["low-power", "single-bank"] },
-    { regex_feature = "stm32f7[67]..[ig]", target = "thumbv7em-none-eabi", features = ["dual-bank"] },
+    { regex_feature = "stm32f4[2367]..[ig]", target = "thumbv7em-none-eabi", features = [
+        "low-power",
+        "dual-bank",
+    ] },
+    { regex_feature = "stm32f4.*", target = "thumbv7em-none-eabi", features = [
+        "low-power",
+        "single-bank",
+    ] },
+    { regex_feature = "stm32f7[67]..[ig]", target = "thumbv7em-none-eabi", features = [
+        "dual-bank",
+    ] },
     { regex_feature = "stm32f7.*", target = "thumbv7em-none-eabi" },
     { regex_feature = "stm32c0.*", target = "thumbv6m-none-eabi" },
-    { regex_feature = "stm32g0...c", target = "thumbv6m-none-eabi", features = ["dual-bank"] },
+    { regex_feature = "stm32g0...c", target = "thumbv6m-none-eabi", features = [
+        "dual-bank",
+    ] },
     { regex_feature = "stm32g0.*", target = "thumbv6m-none-eabi" },
-    { regex_feature = "stm32g4[78].*", target = "thumbv7em-none-eabi", features = ["low-power", "dual-bank"] },
-    { regex_feature = "stm32g4.*", target = "thumbv7em-none-eabi", features = ["low-power"] },
-    { regex_feature = "stm32h5.*", target = "thumbv8m.main-none-eabihf", features = ["low-power"] },
+    { regex_feature = "stm32g4[78].*", target = "thumbv7em-none-eabi", features = [
+        "low-power",
+        "dual-bank",
+    ] },
+    { regex_feature = "stm32g4.*", target = "thumbv7em-none-eabi", features = [
+        "low-power",
+    ] },
+    { regex_feature = "stm32h5.*", target = "thumbv8m.main-none-eabihf", features = [
+        "low-power",
+    ] },
     { regex_feature = "stm32h7.*", target = "thumbv7em-none-eabi" },
-    { regex_feature = "stm32l0.*", target = "thumbv6m-none-eabi", features = ["low-power"] },
+    { regex_feature = "stm32l0.*", target = "thumbv6m-none-eabi", features = [
+        "low-power",
+    ] },
     { regex_feature = "stm32l1.*", target = "thumbv7m-none-eabi" },
-    { regex_feature = "stm32l4[pqrs].*", target = "thumbv7em-none-eabi", features = ["dual-bank"] },
+    { regex_feature = "stm32l4[pqrs].*", target = "thumbv7em-none-eabi", features = [
+        "dual-bank",
+    ] },
     { regex_feature = "stm32l4.*", target = "thumbv7em-none-eabi" },
-    { regex_feature = "stm32l5...e", target = "thumbv8m.main-none-eabihf", features = ["low-power", "dual-bank"] },
-    { regex_feature = "stm32l5.*", target = "thumbv8m.main-none-eabihf", features = ["low-power"] },
+    { regex_feature = "stm32l5...e", target = "thumbv8m.main-none-eabihf", features = [
+        "low-power",
+        "dual-bank",
+    ] },
+    { regex_feature = "stm32l5.*", target = "thumbv8m.main-none-eabihf", features = [
+        "low-power",
+    ] },
     { regex_feature = "stm32u0.*", target = "thumbv6m-none-eabi" },
     { regex_feature = "stm32u5.*", target = "thumbv8m.main-none-eabihf" },
     { regex_feature = "stm32wb.*", target = "thumbv7em-none-eabi" },
@@ -44,7 +70,15 @@ flavors = [
 ]
 
 [package.metadata.docs.rs]
-features = ["defmt", "unstable-pac", "exti", "time-driver-any", "time", "stm32h755zi-cm7", "single-bank"]
+features = [
+    "defmt",
+    "unstable-pac",
+    "exti",
+    "time-driver-any",
+    "time",
+    "stm32h755zi-cm7",
+    "single-bank",
+]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
@@ -60,7 +94,9 @@ embassy-usb-driver = { version = "0.2.0", path = "../embassy-usb-driver" }
 embassy-usb-synopsys-otg = { version = "0.3.0", path = "../embassy-usb-synopsys-otg" }
 embassy-executor = { version = "0.8.0", path = "../embassy-executor", optional = true }
 
-embedded-hal-02 = { package = "embedded-hal", version = "0.2.6", features = ["unproven"] }
+embedded-hal-02 = { package = "embedded-hal", version = "0.2.6", features = [
+    "unproven",
+] }
 embedded-hal-1 = { package = "embedded-hal", version = "1.0" }
 embedded-hal-async = { version = "1.0" }
 embedded-hal-nb = { version = "1.0" }
@@ -133,7 +169,7 @@ defmt = [
 ]
 
 exti = []
-low-power = [ "dep:embassy-executor", "embassy-executor?/arch-cortex-m", "time" ]
+low-power = ["dep:embassy-executor", "embassy-executor?/arch-cortex-m", "time"]
 low-power-debug-with-sleep = []
 
 ## Automatically generate `memory.x` file based on the memory map from [`stm32-metapac`](https://docs.rs/stm32-metapac/)
@@ -159,7 +195,11 @@ time = ["dep:embassy-time", "embassy-embedded-hal/time"]
 
 # Features starting with `_` are for internal use only. They're not intended
 # to be enabled by other crates, and are not covered by semver guarantees.
-_time-driver = ["dep:embassy-time-driver", "time", "dep:embassy-time-queue-utils"]
+_time-driver = [
+    "dep:embassy-time-driver",
+    "time",
+    "dep:embassy-time-queue-utils",
+]
 
 ## Use any time driver
 time-driver-any = ["_time-driver"]
