@@ -3,6 +3,7 @@
 #![macro_use]
 #![allow(missing_docs)] // TODO
 #![cfg_attr(adc_f3_v2, allow(unused))]
+#![feature(anonymous_lifetime_in_impl_trait)]
 
 #[cfg(not(any(adc_f3_v2, adc_wba)))]
 #[cfg_attr(adc_f1, path = "f1.rs")]

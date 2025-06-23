@@ -265,6 +265,8 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
         // Set output 2 to inactive on a compare 3 event
         T::regs().tim(C::raw()).rstr(1).modify(|w| w.set_cmp(2, true));
 
+        T::regs().adc1r(0).modify(|w| w.set_adctper(0, true));
+
         Self {
             timer: PhantomData,
             channel: PhantomData,

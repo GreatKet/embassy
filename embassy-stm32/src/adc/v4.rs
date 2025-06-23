@@ -1,8 +1,11 @@
+#![feature(anonymous_lifetime_in_impl_trait)]
 #[cfg(not(stm32u5))]
 use pac::adc::vals::{Adcaldif, Boost};
 #[allow(unused)]
 use pac::adc::vals::{Adstp, Difsel, Dmngt, Exten, Pcsel};
 use pac::adccommon::vals::Presc;
+use stm32_metapac::adc::regs::Ier;
+use stm32_metapac::adc::vals::Ovrmod;
 
 use super::{
     blocking_delay_us, Adc, AdcChannel, AnyAdcChannel, Instance, Resolution, RxDma, SampleTime, SealedAdcChannel,
@@ -162,7 +165,8 @@ impl<'d, T: Instance> Adc<'d, T> {
     pub fn new(adc: Peri<'d, T>) -> Self {
         rcc::enable_and_reset::<T>();
 
-        let prescaler = Prescaler::from_ker_ck(T::frequency());
+        // let prescaler = Prescaler::from_ker_ck(T::frequency());
+        let prescaler = Prescaler::DividedBy256;
 
         T::common_regs().ccr().modify(|w| w.set_presc(prescaler.presc()));
 
@@ -449,6 +453,83 @@ impl<'d, T: Instance> Adc<'d, T> {
         T::regs().cfgr().modify(|reg| {
             reg.set_cont(false);
             reg.set_dmngt(Dmngt::from_bits(0));
+        });
+    }
+    pub fn config_trigger_mode(
+        &mut self,
+        rx_dma: &Peri<'_, impl RxDma<T>>,
+        sequence: impl ExactSizeIterator<Item = (&mut AnyAdcChannel<T>, SampleTime)>,
+    ) -> u8 {
+        Self::cancel_conversions();
+        T::regs().cfgr().modify(|w| {
+            w.set_cont(false);
+            w.set_exten(Exten::RISING_EDGE);
+            w.set_extsel(0b10000);
+            w.set_dmngt(Dmngt::DMA_ONE_SHOT);
+            w.set_ovrmod(Ovrmod::OVERWRITE);
+        });
+        T::regs().ier().write_value(Ier(0));
+
+        T::regs().sqr1().modify(|w| {
+            w.set_l(sequence.len() as u8 - 1);
+        });
+
+        for (i, (channel, sample_time)) in sequence.enumerate() {
+            Self::configure_channel(channel, sample_time);
+            match i {
+                0..=3 => {
+                    T::regs().sqr1().modify(|w| {
+                        w.set_sq(i, channel.channel());
+                    });
+                }
+                4..=8 => {
+                    T::regs().sqr2().modify(|w| {
+                        w.set_sq(i - 4, channel.channel());
+                    });
+                }
+                9..=13 => {
+                    T::regs().sqr3().modify(|w| {
+                        w.set_sq(i - 9, channel.channel());
+                    });
+                }
+                14..=15 => {
+                    T::regs().sqr4().modify(|w| {
+                        w.set_sq(i - 14, channel.channel());
+                    });
+                }
+                _ => unreachable!(),
+            }
+        }
+
+        let request = rx_dma.request();
+
+        T::regs().cr().modify(|reg| {
+            reg.set_adstart(true);
+        });
+        request
+    }
+
+    pub async fn read_trigger_mode(&self, rx_dma: Peri<'_, impl RxDma<T>>, request: u8, readings: &mut [u16]) {
+        let transfer = unsafe {
+            Transfer::new_read(
+                rx_dma,
+                request,
+                T::regs().dr().as_ptr() as *mut u16,
+                readings,
+                Default::default(),
+            )
+        };
+        // info!("New transfer made");
+        let cr = T::regs().cr().read().0;
+        // let cfgr = T::regs().cfgr().read().0;
+        // let ier = T::regs().ier().read().0;
+        // info!("Start is {}", cr & 4);
+        // info!("CFGR: {:b}", cfgr);
+        // info!("IER: {:b}", ier);
+        // info!("CR: {:b}", cr);
+        transfer.await;
+        T::regs().cr().modify(|reg| {
+            reg.set_adstart(true);
         });
     }
 
