@@ -14,6 +14,8 @@ mod tsel;
 use embassy_hal_internal::PeripheralType;
 pub use tsel::TriggerSel;
 
+dma_trait!(TxDma, Instance);
+
 /// Operating mode for DAC channel
 #[cfg(any(dac_v3, dac_v4, dac_v5, dac_v6, dac_v7))]
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -160,6 +162,7 @@ impl<'d, T: Instance, C: Channel> DacChannel<'d, T, C, Async> {
         });
 
         let dma = self.dma.as_mut().unwrap();
+        info!("Request: {}", dma.request);
 
         let tx_options = crate::dma::TransferOptions {
             circular,
@@ -180,6 +183,7 @@ impl<'d, T: Instance, C: Channel> DacChannel<'d, T, C, Async> {
         };
 
         tx_f.await;
+        info!("TX await happened");
 
         T::regs().cr().modify(|w| {
             w.set_en(C::IDX, false);
