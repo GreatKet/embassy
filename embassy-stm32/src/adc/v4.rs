@@ -1,4 +1,3 @@
-#![feature(anonymous_lifetime_in_impl_trait)]
 #[cfg(not(stm32u5))]
 use pac::adc::vals::{Adcaldif, Boost};
 #[allow(unused)]
@@ -459,12 +458,13 @@ impl<'d, T: Instance> Adc<'d, T> {
         &mut self,
         rx_dma: &Peri<'_, impl RxDma<T>>,
         sequence: impl ExactSizeIterator<Item = (&mut AnyAdcChannel<T>, SampleTime)>,
-    ) -> u8 {
+        trigger: u8,
+    ) {
         Self::cancel_conversions();
         T::regs().cfgr().modify(|w| {
             w.set_cont(false);
             w.set_exten(Exten::RISING_EDGE);
-            w.set_extsel(0b10000);
+            w.set_extsel(trigger);
             w.set_dmngt(Dmngt::DMA_ONE_SHOT);
             w.set_ovrmod(Ovrmod::OVERWRITE);
         });
@@ -501,15 +501,13 @@ impl<'d, T: Instance> Adc<'d, T> {
             }
         }
 
-        let request = rx_dma.request();
-
         T::regs().cr().modify(|reg| {
             reg.set_adstart(true);
         });
-        request
     }
 
-    pub async fn read_trigger_mode(&self, rx_dma: Peri<'_, impl RxDma<T>>, request: u8, readings: &mut [u16]) {
+    pub async fn read_trigger_mode(&self, rx_dma: Peri<'_, impl RxDma<T>>, readings: &mut [u16]) {
+        let request = rx_dma.request();
         let transfer = unsafe {
             Transfer::new_read(
                 rx_dma,
