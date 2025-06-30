@@ -162,7 +162,6 @@ impl<'d, T: Instance, C: Channel> DacChannel<'d, T, C, Async> {
         });
 
         let dma = self.dma.as_mut().unwrap();
-        info!("Request: {}", dma.request);
 
         let tx_options = crate::dma::TransferOptions {
             circular,
@@ -181,9 +180,7 @@ impl<'d, T: Instance, C: Channel> DacChannel<'d, T, C, Async> {
                 dma.write(buf, T::regs().dhr12r(C::IDX).as_ptr() as *mut u16, tx_options)
             },
         };
-
         tx_f.await;
-        info!("TX await happened");
 
         T::regs().cr().modify(|w| {
             w.set_en(C::IDX, false);

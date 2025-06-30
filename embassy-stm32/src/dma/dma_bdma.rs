@@ -714,7 +714,7 @@ impl<'a> Transfer<'a> {
     ///
     /// If this returns `false`, it can be because either the transfer finished, or
     /// it was requested to stop early with [`request_stop`](Self::request_stop).
-    pub fn is_running(&mut self) -> bool {
+    pub fn is_running(&self) -> bool {
         self.channel.is_running()
     }
 

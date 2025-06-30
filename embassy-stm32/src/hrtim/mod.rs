@@ -5,6 +5,7 @@ mod traits;
 use core::marker::PhantomData;
 
 use embassy_hal_internal::Peri;
+use stm32_metapac::hrtim::vals::Updgat;
 pub use traits::Instance;
 
 use crate::gpio::{AfType, AnyPin, OutputType, Speed};
@@ -266,6 +267,13 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
         T::regs().tim(C::raw()).rstr(1).modify(|w| w.set_cmp(2, true));
 
         T::regs().adc1r(0).modify(|w| w.set_adctper(0, true));
+        T::regs()
+            .mcr()
+            .modify(|w| w.set_dacsync(stm32_metapac::hrtim::vals::Dacsync::DACSYNC1));
+        T::regs()
+            .tim(C::raw())
+            .cr()
+            .modify(|w| w.set_dacsync(stm32_metapac::hrtim::vals::Dacsync::DACSYNC1));
 
         Self {
             timer: PhantomData,
@@ -287,6 +295,24 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
     /// Stop HRTIM.
     pub fn stop(&mut self) {
         T::regs().mcr().modify(|w| w.set_tcen(C::raw(), false));
+    }
+
+    /// Set update event
+    pub fn set_update(&mut self, update: Updgat) {
+        T::regs()
+            .tim(C::raw())
+            .cr()
+            .modify(|w| w.set_updgat(stm32_metapac::hrtim::vals::Updgat::DMABURST));
+        if update == stm32_metapac::hrtim::vals::Updgat::DMABURST {
+            {
+                T::regs().tim(C::raw()).cr().modify(|w| w.set_repu(true))
+            }
+        } else {
+            T::regs().tim(C::raw()).cr().modify(|w| {
+                w.set_updgat(update);
+                w.set_repu(false);
+            });
+        }
     }
 
     /// Set new frequency
@@ -335,6 +361,7 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
         self.dead_time_secondary = secondary_dead_time;
         self.max_secondary_duty = self.get_max_compare_value() - secondary_dead_time;
         self.update_primary_duty_or_dead_time();
+        self.set_secondary_duty(self.max_secondary_duty);
     }
 
     /// Get the maximum compare value of a duty cycle
