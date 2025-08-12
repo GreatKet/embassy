@@ -394,11 +394,6 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
         T::regs().tim(C::raw()).cmp(2).modify(|w| w.set_cmp(secondary_duty));
     }
 
-    /// Get secondary duty
-    // pub fn get_secondary_duty(&self) -> u16 {
-    //     self.current_secondary_duty
-    // }
-
     /// Get frequency
     pub fn get_frequency(&self) -> u32 {
         self.frequency.0
