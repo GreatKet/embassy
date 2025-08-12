@@ -395,9 +395,9 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
     }
 
     /// Get secondary duty
-    pub fn get_secondary_duty(&self) -> u16 {
-        self.current_secondary_duty
-    }
+    // pub fn get_secondary_duty(&self) -> u16 {
+    //     self.current_secondary_duty
+    // }
 
     /// Get frequency
     pub fn get_frequency(&self) -> u32 {
