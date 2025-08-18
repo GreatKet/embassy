@@ -1,0 +1,5 @@
+#!/bin/bash
+
+gdb --eval-command='target extended-remote localhost:3333' \
+          --eval-command='load' \
+                  ./target/thumbv7em-none-eabihf/debug/stm32-bootloader-dual-bank-flash-example
