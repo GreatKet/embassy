@@ -1,31 +1,38 @@
 #![no_std]
 #![no_main]
 
-mod fmt;
-
 use core::{cell::RefCell, mem::MaybeUninit};
 
 use cortex_m_rt::{entry, exception};
-
+#[cfg(feature = "defmt")]
+use defmt_rtt as _;
 use embassy_boot_stm32::*;
 use embassy_stm32::flash::{Flash, BANK1_REGION};
 use embassy_stm32::{rcc::SupplyConfig, Config, SharedData};
 use embassy_sync::blocking_mutex::Mutex;
-use fmt::info;
+
 // #[link_section = ".ram_d3"]
 static SHARED_DATA: MaybeUninit<SharedData> = MaybeUninit::uninit();
-
-// macro_rules! info {
-//     ($s:literal $(, $x:expr)* $(,)?) => {
-//         {
-//             #[cfg(feature = "defmt")]
-//             ::defmt::info!($s $(, $x)*);
-//             #[cfg(not(feature="defmt"))]
-//             let _ = ($( & $x ),*);
-//         }
-//     };
-// }
-
+macro_rules! trace {
+    ($s:literal $(, $x:expr)* $(,)?) => {
+        {
+            #[cfg(feature = "defmt")]
+            ::defmt::trace!($s $(, $x)*);
+            #[cfg(feature="defmt")]
+            let _ = ($( & $x ),*);
+        }
+    };
+}
+macro_rules! info {
+    ($s:literal $(, $x:expr)* $(,)?) => {
+        {
+            #[cfg(feature = "defmt")]
+            ::defmt::info!($s $(, $x)*);
+            #[cfg(not(feature="defmt"))]
+            let _ = ($( & $x ),*);
+        }
+    };
+}
 #[entry]
 fn main() -> ! {
     let mut config: Config = Default::default();
@@ -39,34 +46,14 @@ fn main() -> ! {
     for i in 0..10000000 {
         cortex_m::asm::nop();
     }
-    info!("I'm here");
     let layout = Flash::new_blocking(p.FLASH).into_blocking_regions();
     let flash_bank1 = Mutex::new(RefCell::new(layout.bank1_region));
     let flash_bank2 = Mutex::new(RefCell::new(layout.bank2_region));
 
     let config = BootLoaderConfig::from_linkerfile_blocking(&flash_bank1, &flash_bank2, &flash_bank1);
     let active_offset = config.active.offset();
-    info!("Active_offset: {}", active_offset);
+    trace!("Active_offset: {}", active_offset);
     let bl = BootLoader::prepare::<_, _, _, 2048>(config);
-    extern "C" {
-        static __bootloader_active_start: u32;
-        static __bootloader_active_end: u32;
-        static __bootloader_state_start: u32;
-        static __bootloader_dfu_start: u32;
-    }
-
-    let active_off = unsafe { core::ptr::addr_of!(__bootloader_active_start) as u32 };
-    let state_off = unsafe { core::ptr::addr_of!(__bootloader_state_start) as u32 };
-    let dfu_off = unsafe { core::ptr::addr_of!(__bootloader_dfu_start) as u32 };
-
-    info!(
-        "offs: active=0x{:x} state=0x{:x} dfu=0x{:x}",
-        active_off, state_off, dfu_off
-    );
-
-    // Also print the *computed* absolute start the loader will jump to:
-    let active_base = 0x0800_0000; // Bank1 base (for your own check)
-    info!("active_abs ~= 0x{:08x}", active_base + active_off);
 
     unsafe { bl.load(BANK1_REGION.base + active_offset) }
 }
@@ -87,5 +74,8 @@ unsafe fn DefaultHandler(_: i16) -> ! {
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
+    for i in 0..10000000 {
+        cortex_m::asm::nop();
+    }
     cortex_m::asm::udf();
 }

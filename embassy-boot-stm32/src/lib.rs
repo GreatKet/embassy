@@ -21,6 +21,7 @@ impl BootLoader {
         config: BootLoaderConfig<ACTIVE, DFU, STATE>,
     ) -> Self {
         if let Ok(loader) = Self::try_prepare::<ACTIVE, DFU, STATE, BUFFER_SIZE>(config) {
+            trace!("Loader ok");
             loader
         } else {
             // Use explicit panic instead of .expect() to ensure this gets routed via defmt/etc.

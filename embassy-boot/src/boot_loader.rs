@@ -247,14 +247,14 @@ impl<ACTIVE: NorFlash, DFU: NorFlash, STATE: NorFlash> BootLoader<ACTIVE, DFU, S
         assert!(aligned_buf.len() >= STATE::WRITE_SIZE);
         assert_eq!(0, aligned_buf.len() % ACTIVE::WRITE_SIZE);
         assert_eq!(0, aligned_buf.len() % DFU::WRITE_SIZE);
-
+        trace!("All asserts ok");
         // Ensure our partitions are able to handle boot operations
         assert_partitions(&self.active, &self.dfu, &self.state, Self::PAGE_SIZE);
 
         // Copy contents from partition N to active
         let state = self.read_state(aligned_buf)?;
         if state == State::Swap {
-            //
+            trace!("Swap");
             // Check if we already swapped. If we're in the swap state, this means we should revert
             // since the app has failed to mark boot as successful
             //
