@@ -408,6 +408,7 @@ impl<'d, M: Mode, IM: MasterMode> I2c<'d, M, IM> {
                 *byte = self.info.regs.rxdr().read().rxdata();
             }
         }
+        self.wait_stop(timeout)?;
         Ok(())
     }
 
@@ -453,7 +454,8 @@ impl<'d, M: Mode, IM: MasterMode> I2c<'d, M, IM> {
                 // (START has been ACKed or last byte when
                 // through)
                 if let Err(err) = self.wait_txis(timeout) {
-                    if send_stop {
+                    if send_stop && err != Error::Nack {
+                        // STOP is sent automatically if a NACK was received
                         self.master_stop();
                     }
                     return Err(err);
@@ -463,11 +465,13 @@ impl<'d, M: Mode, IM: MasterMode> I2c<'d, M, IM> {
             }
         }
         // Wait until the write finishes
-        let result = self.wait_tc(timeout);
+        self.wait_tc(timeout)?;
         if send_stop {
             self.master_stop();
+            self.wait_stop(timeout)?;
         }
-        result
+
+        Ok(())
     }
 
     // =========================
@@ -545,7 +549,9 @@ impl<'d, M: Mode, IM: MasterMode> I2c<'d, M, IM> {
                     (idx != last_slice_index) || (slice_len > 255),
                     timeout,
                 ) {
-                    self.master_stop();
+                    if err != Error::Nack {
+                        self.master_stop();
+                    }
                     return Err(err);
                 }
             }
@@ -558,7 +564,9 @@ impl<'d, M: Mode, IM: MasterMode> I2c<'d, M, IM> {
                         (number != last_chunk_idx) || (idx != last_slice_index),
                         timeout,
                     ) {
-                        self.master_stop();
+                        if err != Error::Nack {
+                            self.master_stop();
+                        }
                         return Err(err);
                     }
                 }
@@ -568,7 +576,9 @@ impl<'d, M: Mode, IM: MasterMode> I2c<'d, M, IM> {
                     // (START has been ACKed or last byte when
                     // through)
                     if let Err(err) = self.wait_txis(timeout) {
-                        self.master_stop();
+                        if err != Error::Nack {
+                            self.master_stop();
+                        }
                         return Err(err);
                     }
 
@@ -579,9 +589,11 @@ impl<'d, M: Mode, IM: MasterMode> I2c<'d, M, IM> {
             }
         }
         // Wait until the write finishes
-        let result = self.wait_tc(timeout);
+        self.wait_tc(timeout)?;
         self.master_stop();
-        result
+        self.wait_stop(timeout)?;
+
+        Ok(())
     }
 }
 
@@ -1271,7 +1283,7 @@ impl<'d> I2c<'d, Async, MultiMaster> {
             } else if isr.stopf() {
                 self.info.regs.icr().write(|reg| reg.set_stopcf(true));
                 if remaining_len > 0 {
-                    dma_transfer.request_stop();
+                    dma_transfer.request_pause();
                     Poll::Ready(Ok(SendStatus::LeftoverBytes(remaining_len as usize)))
                 } else {
                     Poll::Ready(Ok(SendStatus::Done))
