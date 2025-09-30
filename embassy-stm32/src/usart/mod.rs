@@ -898,7 +898,7 @@ impl<'d> UartRx<'d, Async> {
 
             // Idle line detected first
             Either::Right((Ok(()), mut transfer)) => Ok(ReadCompletionEvent::Idle({
-                transfer.request_stop();
+                transfer.request_pause();
                 while transfer.is_running() {}
                 buffer_len - transfer.get_remaining_transfers() as usize
             })),
