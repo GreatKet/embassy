@@ -16,6 +16,7 @@ use crate::waitqueue::WakerRegistration;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TryLockError;
 
+#[derive(Debug)]
 struct State {
     readers: usize,
     writer: bool,
@@ -36,8 +37,6 @@ struct State {
 /// Use [`NoopRawMutex`](crate::blocking_mutex::raw::NoopRawMutex) when data is only shared between tasks running on the same executor.
 ///
 /// Use [`ThreadModeRawMutex`](crate::blocking_mutex::raw::ThreadModeRawMutex) when data is shared between tasks running on the same executor but you want a singleton.
-///
-
 pub struct RwLock<M, T>
 where
     M: RawMutex,
