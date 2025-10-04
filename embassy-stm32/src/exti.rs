@@ -46,7 +46,7 @@ fn exticr_regs() -> pac::afio::Afio {
 
 unsafe fn on_irq() {
     #[cfg(not(any(exti_c0, exti_g0, exti_u0, exti_l5, exti_u5, exti_h5, exti_h50)))]
-    let bits = EXTI.pr(0).read().0;
+    let bits = EXTI.pr(1).read().0;
     #[cfg(any(exti_c0, exti_g0, exti_u0, exti_l5, exti_u5, exti_h5, exti_h50))]
     let bits = EXTI.rpr(0).read().0 | EXTI.fpr(0).read().0;
 
@@ -54,7 +54,7 @@ unsafe fn on_irq() {
     let bits = bits & 0x0000FFFF;
 
     // Mask all the channels that fired.
-    cpu_regs().imr(0).modify(|w| w.0 &= !bits);
+    cpu_regs().imr(1).modify(|w| w.0 &= !bits);
 
     // Wake the tasks
     for pin in BitIter(bits) {
@@ -63,7 +63,7 @@ unsafe fn on_irq() {
 
     // Clear pending
     #[cfg(not(any(exti_c0, exti_g0, exti_u0, exti_l5, exti_u5, exti_h5, exti_h50)))]
-    EXTI.pr(0).write_value(Lines(bits));
+    EXTI.pr(1).write_value(Lines(bits));
     #[cfg(any(exti_c0, exti_g0, exti_u0, exti_l5, exti_u5, exti_h5, exti_h50))]
     {
         EXTI.rpr(0).write_value(Lines(bits));
