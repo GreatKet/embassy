@@ -132,8 +132,14 @@ impl<'d> ExtiInput<'d> {
     /// Asynchronously wait until the pin is high.
     ///
     /// This returns immediately if the pin is already high.
-    pub async fn wait_for_high(&mut self) {
-        let fut = ExtiInputFuture::new(self.pin.pin.pin.pin(), self.pin.pin.pin.port(), true, false);
+    pub async fn wait_for_high(&mut self, second_core: bool) {
+        let fut = ExtiInputFuture::new(
+            self.pin.pin.pin.pin(),
+            self.pin.pin.pin.port(),
+            true,
+            false,
+            second_core,
+        );
         if self.is_high() {
             return;
         }
@@ -143,8 +149,14 @@ impl<'d> ExtiInput<'d> {
     /// Asynchronously wait until the pin is low.
     ///
     /// This returns immediately if the pin is already low.
-    pub async fn wait_for_low(&mut self) {
-        let fut = ExtiInputFuture::new(self.pin.pin.pin.pin(), self.pin.pin.pin.port(), false, true);
+    pub async fn wait_for_low(&mut self, second_core: bool) {
+        let fut = ExtiInputFuture::new(
+            self.pin.pin.pin.pin(),
+            self.pin.pin.pin.port(),
+            false,
+            true,
+            second_core,
+        );
         if self.is_low() {
             return;
         }
@@ -154,20 +166,34 @@ impl<'d> ExtiInput<'d> {
     /// Asynchronously wait until the pin sees a rising edge.
     ///
     /// If the pin is already high, it will wait for it to go low then back high.
-    pub async fn wait_for_rising_edge(&mut self) {
-        ExtiInputFuture::new(self.pin.pin.pin.pin(), self.pin.pin.pin.port(), true, false).await
+    pub async fn wait_for_rising_edge(&mut self, second_core: bool) {
+        ExtiInputFuture::new(
+            self.pin.pin.pin.pin(),
+            self.pin.pin.pin.port(),
+            true,
+            false,
+            second_core,
+        )
+        .await
     }
 
     /// Asynchronously wait until the pin sees a falling edge.
     ///
     /// If the pin is already low, it will wait for it to go high then back low.
-    pub async fn wait_for_falling_edge(&mut self) {
-        ExtiInputFuture::new(self.pin.pin.pin.pin(), self.pin.pin.pin.port(), false, true).await
+    pub async fn wait_for_falling_edge(&mut self, second_core: bool) {
+        ExtiInputFuture::new(
+            self.pin.pin.pin.pin(),
+            self.pin.pin.pin.port(),
+            false,
+            true,
+            second_core,
+        )
+        .await
     }
 
     /// Asynchronously wait until the pin sees any edge (either rising or falling).
-    pub async fn wait_for_any_edge(&mut self) {
-        ExtiInputFuture::new(self.pin.pin.pin.pin(), self.pin.pin.pin.port(), true, true).await
+    pub async fn wait_for_any_edge(&mut self, second_core: bool) {
+        ExtiInputFuture::new(self.pin.pin.pin.pin(), self.pin.pin.pin.port(), true, true, second_core).await
     }
 }
 
@@ -199,27 +225,27 @@ impl<'d> embedded_hal_1::digital::InputPin for ExtiInput<'d> {
 
 impl<'d> embedded_hal_async::digital::Wait for ExtiInput<'d> {
     async fn wait_for_high(&mut self) -> Result<(), Self::Error> {
-        self.wait_for_high().await;
+        self.wait_for_high(false).await;
         Ok(())
     }
 
     async fn wait_for_low(&mut self) -> Result<(), Self::Error> {
-        self.wait_for_low().await;
+        self.wait_for_low(false).await;
         Ok(())
     }
 
     async fn wait_for_rising_edge(&mut self) -> Result<(), Self::Error> {
-        self.wait_for_rising_edge().await;
+        self.wait_for_rising_edge(false).await;
         Ok(())
     }
 
     async fn wait_for_falling_edge(&mut self) -> Result<(), Self::Error> {
-        self.wait_for_falling_edge().await;
+        self.wait_for_falling_edge(false).await;
         Ok(())
     }
 
     async fn wait_for_any_edge(&mut self) -> Result<(), Self::Error> {
-        self.wait_for_any_edge().await;
+        self.wait_for_any_edge(false).await;
         Ok(())
     }
 }
@@ -231,7 +257,7 @@ struct ExtiInputFuture<'a> {
 }
 
 impl<'a> ExtiInputFuture<'a> {
-    fn new(pin: u8, port: u8, rising: bool, falling: bool) -> Self {
+    fn new(pin: u8, port: u8, rising: bool, falling: bool, second_core: bool) -> Self {
         critical_section::with(|_| {
             let pin = pin as usize;
             exticr_regs().exticr(pin / 4).modify(|w| w.set_exti(pin % 4, port));
@@ -240,14 +266,14 @@ impl<'a> ExtiInputFuture<'a> {
 
             // clear pending bit
             #[cfg(not(any(exti_c0, exti_g0, exti_u0, exti_l5, exti_u5, exti_h5, exti_h50)))]
-            EXTI.pr(0).write(|w| w.set_line(pin, true));
+            EXTI.pr(second_core as usize).write(|w| w.set_line(pin, true));
             #[cfg(any(exti_c0, exti_g0, exti_u0, exti_l5, exti_u5, exti_h5, exti_h50))]
             {
                 EXTI.rpr(0).write(|w| w.set_line(pin, true));
                 EXTI.fpr(0).write(|w| w.set_line(pin, true));
             }
 
-            cpu_regs().imr(0).modify(|w| w.set_line(pin, true));
+            cpu_regs().imr(second_core as usize).modify(|w| w.set_line(pin, true));
         });
 
         Self {
