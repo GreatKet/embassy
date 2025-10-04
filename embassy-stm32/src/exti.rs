@@ -298,7 +298,7 @@ impl<'a> Future for ExtiInputFuture<'a> {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         EXTI_WAKERS[self.pin as usize].register(cx.waker());
 
-        let imr = cpu_regs().imr(0).read();
+        let imr = cpu_regs().imr(1).read();
         if !imr.line(self.pin as _) {
             Poll::Ready(())
         } else {
