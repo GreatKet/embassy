@@ -316,15 +316,15 @@ impl<T: Instance, C: AdvancedChannel<T>> BridgeConverter<T, C> {
     }
 
     /// Enable burst mode.
-    pub fn enable_burst_mode(&mut self) {
+    pub fn enable_burst_mode(&mut self, idle_is_high: bool) {
         T::regs().tim(C::raw()).outr().modify(|w| {
             // Enable Burst Mode
             w.set_idlem(0, true);
             w.set_idlem(1, true);
 
             // Set output to active during the burst
-            w.set_idles(0, true);
-            w.set_idles(1, true);
+            w.set_idles(0, idle_is_high);
+            w.set_idles(1, idle_is_high);
         })
     }
 
