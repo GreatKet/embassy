@@ -389,7 +389,7 @@ pub fn disable<T: RccPeripheral>() {
 /// Please not this only re-configures the rcc and the time driver (not GPIO, EXTI, etc).
 ///
 /// This should only be called after `init`.
-#[cfg(not(feature = "_dual-core"))]
+
 pub fn reinit<'a>(config: Config, _rcc: &'a mut crate::Peri<'a, crate::peripherals::RCC>) {
     critical_section::with(|cs| init_rcc(cs, config))
 }
