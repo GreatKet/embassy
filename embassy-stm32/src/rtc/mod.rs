@@ -111,6 +111,7 @@ pub struct Rtc {
     #[cfg(feature = "low-power")]
     stop_time: Mutex<CriticalSectionRawMutex, Cell<Option<low_power::RtcInstant>>>,
     _private: (),
+    pub lsi_freq: u32,
 }
 
 /// RTC configuration.
@@ -154,6 +155,7 @@ impl Rtc {
             #[cfg(feature = "low-power")]
             stop_time: Mutex::const_new(CriticalSectionRawMutex::new(), Cell::new(None)),
             _private: (),
+            lsi_freq: 0,
         };
 
         let frequency = Self::frequency();
@@ -168,6 +170,8 @@ impl Rtc {
             let now = this.time_provider().read(|_, _, ss| Ok(ss)).unwrap();
             while now == this.time_provider().read(|_, _, ss| Ok(ss)).unwrap() {}
         }
+
+        this.lsi_freq = frequency.0;
 
         this
     }
