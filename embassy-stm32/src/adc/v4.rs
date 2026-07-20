@@ -532,7 +532,7 @@ impl<'d, T: Instance> Adc<'d, T> {
         });
     }
 
-    fn configure_channel(channel: &mut impl AdcChannel<T>, sample_time: SampleTime) {
+    pub fn configure_channel(channel: &mut impl AdcChannel<T>, sample_time: SampleTime) {
         channel.setup();
 
         let channel = channel.channel();

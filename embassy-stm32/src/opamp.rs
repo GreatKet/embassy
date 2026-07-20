@@ -341,6 +341,27 @@ impl<'d, T: Instance> OpAmp<'d, T> {
         OpAmpOutput { _inner: self }
     }
 
+    #[cfg(opamp_v4)]
+    pub fn standalone_ext(
+        &mut self,
+        p_pin: Peri<'d, impl NonInvertingPin<T> + crate::gpio::Pin>,
+        m_pin: Peri<'d, impl InvertingPin<T> + crate::gpio::Pin>,
+        out_pin: Peri<'d, impl OutputPin<T> + crate::gpio::Pin>,
+    ) -> OpAmpOutput<'_, T> {
+        p_pin.set_as_analog();
+        m_pin.set_as_analog();
+        out_pin.set_as_analog();
+
+        T::regs().csr().modify(|w| {
+            use crate::pac::opamp::vals::*;
+            w.set_vp_sel(VpSel::GPIO_INP0);
+            w.set_vm_sel(VmSel::INM0);
+            w.set_opampen(true);
+        });
+
+        OpAmpOutput { _inner: self }
+    }
+
     /// Configure the OpAmp in standalone mode with the non-inverting input
     /// connected to the provided `p_pin`, the inverting input connected to
     /// the `m_pin`, and output is connected to the DAC.

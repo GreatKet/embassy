@@ -1062,7 +1062,7 @@ impl<'d, M: Mode> UartRx<'d, M> {
     }
 
     /// Read a single u8 if there is one available, otherwise return WouldBlock
-    pub(crate) fn nb_read(&mut self) -> Result<u8, nb::Error<Error>> {
+    pub fn nb_read(&mut self) -> Result<u8, nb::Error<Error>> {
         let r = self.info.regs;
         if self.check_rx_flags()? {
             Ok(unsafe { rdr(r).read_volatile() })
