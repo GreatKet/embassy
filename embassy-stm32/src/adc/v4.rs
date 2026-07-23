@@ -166,7 +166,7 @@ impl<'d, T: Instance> Adc<'d, T> {
         rcc::enable_and_reset::<T>();
 
         // let prescaler = Prescaler::from_ker_ck(T::frequency());
-        let prescaler = Prescaler::DividedBy256;
+        let prescaler = Prescaler::DividedBy10;
 
         T::common_regs().ccr().modify(|w| w.set_presc(prescaler.presc()));
 
